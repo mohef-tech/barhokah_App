@@ -67,6 +67,9 @@ class HttpServerService {
     <label>Nama Masjid</label>
     <input type="text" name="namaMasjid" required />
 
+    <label>Alamat / Kota</label>
+    <input type="text" name="alamat" />
+
     <label>Latitude</label>
     <input type="number" step="any" name="latitude" required />
 
@@ -88,6 +91,9 @@ class HttpServerService {
     <label>Durasi Iqomah Isya (menit)</label>
     <input type="number" name="durasiIqomahIsya" value="10" />
 
+    <label>Durasi Sholat Jamaah (menit, berlaku untuk semua waktu)</label>
+    <input type="number" name="durasiJamaah" value="15" />
+
     <label>Running Text (satu per baris)</label>
     <textarea name="runningTexts" rows="4"></textarea>
 
@@ -105,6 +111,7 @@ class HttpServerService {
 
     final config = MasjidConfig(
       namaMasjid: params['namaMasjid'] ?? '',
+      alamat: params['alamat'] ?? '',
       latitude: double.tryParse(params['latitude'] ?? '') ?? 0,
       longitude: double.tryParse(params['longitude'] ?? '') ?? 0,
       durasiIqomahSubuh: int.tryParse(params['durasiIqomahSubuh'] ?? '') ?? 10,
@@ -112,6 +119,7 @@ class HttpServerService {
       durasiIqomahAshr: int.tryParse(params['durasiIqomahAshr'] ?? '') ?? 10,
       durasiIqomahMaghrib: int.tryParse(params['durasiIqomahMaghrib'] ?? '') ?? 5,
       durasiIqomahIsya: int.tryParse(params['durasiIqomahIsya'] ?? '') ?? 10,
+      durasiJamaah: int.tryParse(params['durasiJamaah'] ?? '') ?? 15,
       runningTexts: (params['runningTexts'] ?? '').split('\n').where((s) => s.trim().isNotEmpty).toList(),
     );
 

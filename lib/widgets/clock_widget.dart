@@ -32,23 +32,48 @@ class _ClockWidgetState extends State<ClockWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     final hijri = HijriCalendarConfig.fromGregorian(_now);
     final jam = '${_pad(_now.hour)}:${_pad(_now.minute)}:${_pad(_now.second)}';
     final tanggalMasehi = '${_now.day} ${_bulanMasehi(_now.month)} ${_now.year}';
     final tanggalHijri = '${hijri.hDay} ${hijri.getLongMonthName()} ${hijri.hYear} H';
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        Text(jam, style: const TextStyle(color: Colors.white, fontSize: 64, fontWeight: FontWeight.bold, letterSpacing: 4)),
-        const SizedBox(height: 4),
-        Text(tanggalMasehi, style: const TextStyle(color: Colors.grey, fontSize: 18)),
-        Text(tanggalHijri, style: const TextStyle(color: Colors.grey, fontSize: 18)),
+        Text(
+          jam,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: size.width * 0.045,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 2,
+            shadows: const [Shadow(blurRadius: 8, color: Colors.black)],
+          ),
+        ),
+        Text(
+          tanggalMasehi,
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: size.width * 0.016,
+            shadows: const [Shadow(blurRadius: 6, color: Colors.black)],
+          ),
+        ),
+        Text(
+          tanggalHijri,
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: size.width * 0.016,
+            shadows: const [Shadow(blurRadius: 6, color: Colors.black)],
+          ),
+        ),
       ],
     );
   }
 
   String _bulanMasehi(int bulan) {
-    const list = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    const list = ['Januari','Februari','Maret','April','Mei','Juni',
+                  'Juli','Agustus','September','Oktober','November','Desember'];
     return list[bulan - 1];
   }
 }

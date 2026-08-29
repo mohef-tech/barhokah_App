@@ -9,16 +9,21 @@ class RunningTextWidget extends StatefulWidget {
   State<RunningTextWidget> createState() => _RunningTextWidgetState();
 }
 
-class _RunningTextWidgetState extends State<RunningTextWidget> {
-  late ScrollController _scrollController;
-  Timer? _timer;
+class _RunningTextWidgetState extends State<RunningTextWidget>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
   int _currentIndex = 0;
+  double _screenWidth = 0;
+  final GlobalKey _textKey = GlobalKey();
+  double _textWidth = 0;
 
   @override
   void initState() {
     super.initState();
-    _scrollController = ScrollController();
-    _startScroll();
+    _controller = AnimationController(vsync: this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startMarquee();
+    });
   }
 
   @override
@@ -26,71 +31,79 @@ class _RunningTextWidgetState extends State<RunningTextWidget> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.texts != widget.texts) {
       _currentIndex = 0;
-      _startScroll();
+      _controller.stop();
+      WidgetsBinding.instance.addPostFrameCallback((_) => _startMarquee());
     }
   }
 
-  void _startScroll() {
-    _timer?.cancel();
-    if (widget.texts.isEmpty) return;
+  void _startMarquee() {
+    if (!mounted || widget.texts.isEmpty) return;
+    _screenWidth = MediaQuery.of(context).size.width;
 
-    Future.delayed(const Duration(seconds: 1), () {
-      _scrollText();
-    });
-  }
+    // Ukur lebar teks
+    final renderBox = _textKey.currentContext?.findRenderObject() as RenderBox?;
+    _textWidth = renderBox?.size.width ?? _screenWidth * 2;
 
-  void _scrollText() async {
-    if (!mounted) return;
-    if (_scrollController.hasClients) {
-      final maxScroll = _scrollController.position.maxScrollExtent;
-      await _scrollController.animateTo(
-        maxScroll,
-        duration: Duration(seconds: (maxScroll / 40).round().clamp(5, 30)),
-        curve: Curves.linear,
-      );
-      await Future.delayed(const Duration(seconds: 2));
+    // Total jarak: mulai dari kanan layar, berakhir setelah teks keluar kiri
+    final totalDistance = _screenWidth + _textWidth;
+    final duration = Duration(milliseconds: (totalDistance * 20).toInt());
+
+    _controller.duration = duration;
+    _controller.reset();
+    _controller.forward().then((_) {
       if (!mounted) return;
-      _scrollController.jumpTo(0);
       setState(() {
         _currentIndex = (_currentIndex + 1) % widget.texts.length;
       });
-      await Future.delayed(const Duration(seconds: 1));
-      _scrollText();
-    } else {
-      _timer = Timer(const Duration(seconds: 1), _scrollText);
-    }
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) _startMarquee();
+      });
+    });
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
-    _scrollController.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (widget.texts.isEmpty) {
-      return const SizedBox(height: 40);
-    }
+    if (widget.texts.isEmpty) return const SizedBox(height: 44);
 
-    final size = MediaQuery.of(context).size;
-    final fontSize = size.width * 0.018;
+    _screenWidth = MediaQuery.of(context).size.width;
+    final fontSize = _screenWidth * 0.018;
 
     return Container(
-      height: 48,
-      color: const Color(0xFF1a1a1a),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: SingleChildScrollView(
-        controller: _scrollController,
-        scrollDirection: Axis.horizontal,
-        child: Text(
-          widget.texts[_currentIndex],
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: fontSize,
-          ),
-        ),
+      height: 44,
+      color: Colors.black.withOpacity(0.55),
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          // Posisi: mulai dari kanan (_screenWidth), bergerak ke kiri
+          final offset = _screenWidth - (_controller.value * (_screenWidth + _textWidth));
+          return Stack(
+            children: [
+              Positioned(
+                left: offset,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: Text(
+                    key: _textKey,
+                    widget.texts[_currentIndex],
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: fontSize,
+                    ),
+                    maxLines: 1,
+                    softWrap: false,
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

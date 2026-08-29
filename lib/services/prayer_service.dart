@@ -1,6 +1,18 @@
 import 'package:adhan/adhan.dart';
+import '../models/masjid_config.dart';
+
+enum PrayerPhase { normal, azanAlert, iqomah, jamaah }
+
+class PrayerPhaseInfo {
+  final PrayerPhase phase;
+  final String prayerName; // kosong kalau phase == normal
+  final int secondsRemaining; // sisa detik untuk phase saat ini
+  PrayerPhaseInfo(this.phase, this.prayerName, this.secondsRemaining);
+}
 
 class PrayerService {
+  static const int azanAlertSeconds = 15;
+
   static PrayerTimes getPrayerTimes(double latitude, double longitude) {
     final coords = Coordinates(latitude, longitude);
     final params = CalculationMethod.singapore.getParameters();
@@ -13,8 +25,6 @@ class PrayerService {
     return times.fajr.subtract(const Duration(minutes: 10));
   }
 
-  // Sholat yang baru saja lewat (paling terakhir terjadi) hari ini.
-  // null kalau belum masuk waktu Subuh.
   static String? getLastPrayer(PrayerTimes times) {
     final now = DateTime.now();
     if (now.isBefore(times.fajr)) return null;
@@ -53,5 +63,33 @@ class PrayerService {
     if (now.isBefore(times.maghrib)) return times.maghrib;
     if (now.isBefore(times.isha)) return times.isha;
     return times.fajr.add(const Duration(days: 1));
+  }
+
+  // State machine: azanAlert (15 detik) -> iqomah -> jamaah -> normal
+  static PrayerPhaseInfo getPhaseInfo(PrayerTimes times, MasjidConfig config) {
+    final now = DateTime.now();
+    final lastPrayer = getLastPrayer(times);
+    final lastTime = getLastPrayerTime(times);
+
+    if (lastPrayer == null || lastTime == null) {
+      return PrayerPhaseInfo(PrayerPhase.normal, '', 0);
+    }
+
+    final elapsed = now.difference(lastTime).inSeconds;
+    final durasiIqomahSec = config.durasiIqomahFor(lastPrayer) * 60;
+    final durasiJamaahSec = config.durasiJamaah * 60;
+
+    if (elapsed < azanAlertSeconds) {
+      return PrayerPhaseInfo(PrayerPhase.azanAlert, lastPrayer, azanAlertSeconds - elapsed);
+    }
+    if (elapsed < azanAlertSeconds + durasiIqomahSec) {
+      final remain = azanAlertSeconds + durasiIqomahSec - elapsed;
+      return PrayerPhaseInfo(PrayerPhase.iqomah, lastPrayer, remain);
+    }
+    if (elapsed < azanAlertSeconds + durasiIqomahSec + durasiJamaahSec) {
+      final remain = azanAlertSeconds + durasiIqomahSec + durasiJamaahSec - elapsed;
+      return PrayerPhaseInfo(PrayerPhase.jamaah, lastPrayer, remain);
+    }
+    return PrayerPhaseInfo(PrayerPhase.normal, '', 0);
   }
 }

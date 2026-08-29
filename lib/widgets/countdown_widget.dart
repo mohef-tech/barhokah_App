@@ -43,31 +43,37 @@ class _CountdownWidgetState extends State<CountdownWidget> {
     }
   }
 
-  @override
+    @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final fontSize = size.width * 0.022;
-    final nextPrayer = PrayerService.getNextPrayer(widget.times);
-    final nextTime = PrayerService.getNextPrayerTime(widget.times);
-    final durasiIqomah = _getDurasiIqomah(nextPrayer);
-    final iqomahTime = nextTime.add(Duration(minutes: durasiIqomah));
-    final diff = nextTime.difference(_now);
-    final diffIqomah = iqomahTime.difference(_now);
 
-    // Mode iqomah — setelah adzan, sebelum iqomah
-    if (diff.isNegative && !diffIqomah.isNegative) {
-      final s = diffIqomah.inSeconds;
-      final menit = (s ~/ 60).toString().padLeft(2, '0');
-      final detik = (s % 60).toString().padLeft(2, '0');
-      return Column(
-        children: [
-          Text('IQOMAH $nextPrayer', style: TextStyle(color: Colors.orange, fontSize: fontSize * 1.2, fontWeight: FontWeight.bold)),
-          Text('$menit:$detik', style: TextStyle(color: Colors.orange, fontSize: fontSize * 2, fontWeight: FontWeight.bold)),
-        ],
-      );
+    final lastPrayer = PrayerService.getLastPrayer(widget.times);
+    final lastTime = PrayerService.getLastPrayerTime(widget.times);
+
+    // Cek apakah sedang dalam masa iqomah (setelah adzan, sebelum iqomah)
+    if (lastPrayer != null && lastTime != null) {
+      final durasiIqomah = _getDurasiIqomah(lastPrayer);
+      final iqomahTime = lastTime.add(Duration(minutes: durasiIqomah));
+      final diffIqomah = iqomahTime.difference(_now);
+
+      if (!diffIqomah.isNegative) {
+        final s = diffIqomah.inSeconds;
+        final menit = (s ~/ 60).toString().padLeft(2, '0');
+        final detik = (s % 60).toString().padLeft(2, '0');
+        return Column(
+          children: [
+            Text('IQOMAH $lastPrayer', style: TextStyle(color: Colors.orange, fontSize: fontSize * 1.2, fontWeight: FontWeight.bold)),
+            Text('$menit:$detik', style: TextStyle(color: Colors.orange, fontSize: fontSize * 2, fontWeight: FontWeight.bold)),
+          ],
+        );
+      }
     }
 
-    // Mode countdown normal
+    // Mode countdown normal — menuju sholat berikutnya
+    final nextPrayer = PrayerService.getNextPrayer(widget.times);
+    final nextTime = PrayerService.getNextPrayerTime(widget.times);
+    final diff = nextTime.difference(_now);
     final total = diff.inSeconds.abs();
     final jam = (total ~/ 3600).toString().padLeft(2, '0');
     final menit = ((total % 3600) ~/ 60).toString().padLeft(2, '0');

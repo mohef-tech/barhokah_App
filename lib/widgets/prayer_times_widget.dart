@@ -13,6 +13,7 @@ class PrayerTimesWidget extends StatelessWidget {
     final fontSize = size.width * 0.022;
 
     final jadwal = [
+      ('Imsak', PrayerService.getImsakTime(times)),
       ('Subuh', times.fajr),
       ('Dzuhur', times.dhuhr),
       ('Ashr', times.asr),

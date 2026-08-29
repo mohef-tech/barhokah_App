@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:shelf/shelf.dart';
@@ -11,8 +12,19 @@ class HttpServerService {
   static HttpServer? _server;
   static Function(MasjidConfig)? onConfigUpdated;
 
+  // Broadcast stream — dipakai QrScreen untuk tahu kapan config baru
+  // sudah tersimpan, supaya bisa auto-close dan kembali ke display.
+  static final StreamController<MasjidConfig> _configUpdateController =
+      StreamController<MasjidConfig>.broadcast();
+  static Stream<MasjidConfig> get onConfigSaved => _configUpdateController.stream;
+
   static Future<void> start(Function(MasjidConfig) onUpdate) async {
     onConfigUpdated = onUpdate;
+
+    // Guard: jangan start server dua kali (mis. DisplayScreen rebuild),
+    // atau akan exception "port already in use".
+    if (_server != null) return;
+
     final router = Router();
 
     // Form config
@@ -105,6 +117,7 @@ class HttpServerService {
 
     await ConfigService.save(config);
     onConfigUpdated?.call(config);
+    _configUpdateController.add(config);
 
     return Response.ok('''
 <!DOCTYPE html>

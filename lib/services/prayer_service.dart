@@ -5,9 +5,10 @@ enum PrayerPhase { normal, azanAlert, iqomah, jamaah }
 
 class PrayerPhaseInfo {
   final PrayerPhase phase;
-  final String prayerName; // kosong kalau phase == normal
-  final int secondsRemaining; // sisa detik untuk phase saat ini
-  PrayerPhaseInfo(this.phase, this.prayerName, this.secondsRemaining);
+  final String prayerName;
+  final int secondsRemaining;
+  final String location;
+  PrayerPhaseInfo(this.phase, this.prayerName, this.secondsRemaining, [this.location = '']);
 }
 
 class PrayerService {
@@ -80,16 +81,16 @@ class PrayerService {
     final durasiJamaahSec = config.durasiJamaah * 60;
 
     if (elapsed < azanAlertSeconds) {
-      return PrayerPhaseInfo(PrayerPhase.azanAlert, lastPrayer, azanAlertSeconds - elapsed);
+      return PrayerPhaseInfo(PrayerPhase.azanAlert, lastPrayer, azanAlertSeconds - elapsed, config.alamat);
     }
     if (elapsed < azanAlertSeconds + durasiIqomahSec) {
       final remain = azanAlertSeconds + durasiIqomahSec - elapsed;
-      return PrayerPhaseInfo(PrayerPhase.iqomah, lastPrayer, remain);
+      return PrayerPhaseInfo(PrayerPhase.iqomah, lastPrayer, remain, config.alamat  );
     }
     if (elapsed < azanAlertSeconds + durasiIqomahSec + durasiJamaahSec) {
       final remain = azanAlertSeconds + durasiIqomahSec + durasiJamaahSec - elapsed;
-      return PrayerPhaseInfo(PrayerPhase.jamaah, lastPrayer, remain);
+      return PrayerPhaseInfo(PrayerPhase.jamaah, lastPrayer, remain, config.alamat);
     }
-    return PrayerPhaseInfo(PrayerPhase.normal, '', 0);
+    return PrayerPhaseInfo(PrayerPhase.normal, '', 0, config.alamat);
   }
 }

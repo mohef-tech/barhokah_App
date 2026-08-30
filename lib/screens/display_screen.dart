@@ -10,6 +10,7 @@ import '../widgets/countdown_widget.dart';
 import '../widgets/running_text_widget.dart';
 import '../widgets/prayer_status_overlay.dart';
 import 'qr_screen.dart';
+import 'debug_screen.dart';
 
 class DisplayScreen extends StatefulWidget {
   final MasjidConfig config;
@@ -68,6 +69,13 @@ class _DisplayScreenState extends State<DisplayScreen> {
              event.logicalKey == LogicalKeyboardKey.numpadEnter ||
              event.logicalKey == LogicalKeyboardKey.space)) {
           _showQr();
+        }
+                if (event is KeyDownEvent &&
+            event.logicalKey == LogicalKeyboardKey.keyD) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const DebugScreen()),
+          );
         }
       },
       child: Scaffold(
